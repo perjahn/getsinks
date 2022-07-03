@@ -229,30 +229,29 @@ namespace getsinks
             var sinkList = new List<Sink>();
 
             JToken? value;
+            string? name, displayName, state, destination, filter;
 
-            value = node["name"];
-            if (value == null || !(value is JValue))
+            if ((name = (value = node["name"])?.Value<string>()) == null || !(value is JValue))
             {
                 Log($"Ignoring invalid {objectTypeName}, missing name: >>>{node.ToString()}<<<", ConsoleColor.Yellow);
                 return sinkList;
             }
-            string nodeId = value.Value<string>();
+            string nodeId = name;
 
-            value = node["displayName"];
-            if (value == null || !(value is JValue))
+            if ((displayName = (value = node["displayName"])?.Value<string>()) == null || !(value is JValue))
             {
                 Log($"Ignoring invalid {objectTypeName}, missing displayName: >>>{node.ToString()}<<<", ConsoleColor.Yellow);
                 return sinkList;
             }
-            string nodeName = value.Value<string>();
+            string nodeName = displayName;
 
             string url = $"/v2/{nodeId}/sinks";
             var result = await client.GetAsync(url);
             var content = await result.Content.ReadAsStringAsync();
-            JToken? displayName, state;
-            if ((result.StatusCode == HttpStatusCode.NotFound || result.StatusCode == HttpStatusCode.Forbidden) && (displayName = node["displayName"]) != null && (state = node["state"]) != null)
+
+            if ((result.StatusCode == HttpStatusCode.NotFound || result.StatusCode == HttpStatusCode.Forbidden) && (state = node["state"]?.Value<string>()) != null)
             {
-                Console.WriteLine($"Ignoring {objectTypeName}: '{displayName.Value<string>()}', {state.Value<string>()}, {result.StatusCode}");
+                Console.WriteLine($"Ignoring {objectTypeName}: '{nodeName}', {state}, {result.StatusCode}");
                 return sinkList;
             }
             if (!result.IsSuccessStatusCode)
@@ -274,17 +273,17 @@ namespace getsinks
                     continue;
                 }
 
-                if ((value = sinkObject["name"]) == null || !(value is JValue name))
+                if ((name = (value = sinkObject["name"])?.Value<string>()) == null || !(value is JValue))
                 {
                     Log($"Ignoring invalid sink, missing name: {sink.ToString()}", ConsoleColor.Yellow);
                     continue;
                 }
-                if ((value = sinkObject["destination"]) == null || !(value is JValue destination))
+                if ((destination = (value = sinkObject["destination"])?.Value<string>()) == null || !(value is JValue))
                 {
                     Log($"Ignoring invalid sink, missing destination: {sink.ToString()}", ConsoleColor.Yellow);
                     continue;
                 }
-                if ((value = sinkObject["filter"]) == null || !(value is JValue filter))
+                if ((filter = (value = sinkObject["filter"])?.Value<string>()) == null || !(value is JValue))
                 {
                     Log($"Ignoring invalid sink, missing filter: {sink.ToString()}", ConsoleColor.Yellow);
                     continue;
@@ -294,9 +293,9 @@ namespace getsinks
                 {
                     NodeId = nodeId,
                     NodeName = nodeName,
-                    Name = name.Value<string>(),
-                    Destination = destination.Value<string>(),
-                    Filter = filter.Value<string>()
+                    Name = name,
+                    Destination = destination,
+                    Filter = filter
                 });
             }
 
